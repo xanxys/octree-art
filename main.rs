@@ -7,6 +7,7 @@ mod output;
 mod generate;
 
 use clap::{App, Arg};
+use cgmath::Vector3;
 
 fn main() {
     let matches = App::new("Octree Art")
@@ -25,8 +26,18 @@ fn main() {
         )
         .get_matches();
 
-    match input::read_ply_as_mesh(matches.value_of("INPUT").unwrap()) {
-        Err(e) => println!("Couldn't read PLY file:\n{}", e),
-        Ok(mesh) => output::write_stl(matches.value_of("OUTPUT").unwrap(), generate::subdiv(mesh)),
-    }
+    let mesh = match input::read_ply_as_mesh(matches.value_of("INPUT").unwrap()) {
+        Err(e) => panic!("Couldn't read PLY file:\n{}", e),
+        Ok(mesh) => mesh,
+    };
+    print_mesh_stat(&mesh);
+
+    let gen_mesh = generate::subdiv(mesh);
+    print_mesh_stat(&gen_mesh);
+
+    output::write_stl(matches.value_of("OUTPUT").unwrap(), &gen_mesh);
+}
+
+fn print_mesh_stat(mesh: &Vec<[Vector3<f64>; 3]>) {
+    println!("Mesh: #tris={}", mesh.len());
 }

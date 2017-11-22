@@ -1,5 +1,6 @@
 use std::io;
 use ply_rs as ply;
+use ply_rs::ply::Property;
 use cgmath::Vector3;
 use std::fs::File;
 use std::str::FromStr;
@@ -22,9 +23,27 @@ pub fn read_ply_as_mesh(path: &str) -> io::Result<Vec<[Vector3<f64>; 3]>> {
         Ok(ply) => ply,
     };
 
-    // TODO: convert
-    println!("Loaded {:#?}", ply.header.elements);
-    return Ok(vec![]);
+    let mut mesh = Vec::with_capacity(ply.payload["face"].len());
+    let ref vertices = &ply.payload["vertex"];
+    for ref face in &ply.payload["face"] {
+        let ref ixs = match &face["vertex_indices"] {   
+            &Property::ListInt(ref ixs) => ixs,
+            _ => continue,
+        };
+
+        let mut vs: [Vector3<f64>; 3] = [Vector3::new(0.0, 0.0, 0.0); 3];
+        for i in 0..3 {
+            let ref vertex = &vertices[ixs[i] as usize];
+            match (&vertex["x"], &vertex["y"], &vertex["z"]) {
+                (&Property::Float(ref x), &Property::Float(ref y), &Property::Float(ref z)) => {
+                    vs[i] = Vector3::new(*x as f64, *y as f64, *z as f64);
+                },
+                _ => return Err(io::Error::new(io::ErrorKind::InvalidInput, "Broken face / vertex")),
+            }
+        }
+        mesh.push(vs);
+    }
+    Ok(mesh)
 }
 
 fn fix_all(t: &str) -> String {
@@ -32,7 +51,7 @@ fn fix_all(t: &str) -> String {
     for line in t.lines() {
         lines.push(fix_line(line));
     }
-    return lines.join("\n");
+    lines.join("\n")
 }
 
 fn fix_line(t: &str) -> String {
@@ -43,5 +62,5 @@ fn fix_line(t: &str) -> String {
             _ => String::from(word),
         });
     }
-    return words.join(" ");
+    words.join(" ")
 }

@@ -7,21 +7,23 @@ use std::io::Read;
 
 pub fn read_ply_as_mesh(path: &str) -> io::Result<Vec<[Vector3<f64>; 3]>> {
     let mut f = File::open(path).unwrap();
-    
+
     // Preprocess file, because ply-rs cannot handle exponent numbers like "1.0e-4"
     let mut contents = String::new();
-    f.read_to_string(&mut contents);
+    match f.read_to_string(&mut contents) {
+        Err(e) => return Err(e),
+        _ => {},
+    }
     let contents_fixed = fix_all(&contents);
 
-    let p = ply::parser::Parser::<ply::ply::DefaultElement>::new();
-    let ply = p.read_ply(&mut contents_fixed.as_bytes());
+    let parser = ply::parser::Parser::<ply::ply::DefaultElement>::new();
+    let ply = match parser.read_ply(&mut contents_fixed.as_bytes()) {
+        Err(e) => return Err(e),
+        Ok(ply) => ply,
+    };
 
-    if ply.is_ok() {
-        println!("Loaded {:#?}", ply.unwrap().header.elements);
-    } else {
-        println!("Not ok {:#?}", ply);
-    }
-
+    // TODO: convert
+    println!("Loaded {:#?}", ply.header.elements);
     return Ok(vec![]);
 }
 
@@ -36,11 +38,10 @@ fn fix_all(t: &str) -> String {
 fn fix_line(t: &str) -> String {
     let mut words: Vec<String> = vec![];
     for word in t.split_whitespace() {
-        words.push(
-            match f64::from_str(word) {
-                Ok(v) if word.contains("e") => format!("{:.}", v),
-                _ => String::from(word),
-            });
+        words.push(match f64::from_str(word) {
+            Ok(v) if word.contains("e") => format!("{:.}", v),
+            _ => String::from(word),
+        });
     }
     return words.join(" ");
 }

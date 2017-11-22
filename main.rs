@@ -1,26 +1,29 @@
-extern crate ply_rs;
-extern crate clap;
 extern crate cgmath;
+extern crate clap;
+extern crate ply_rs;
 
 mod input;
 mod output;
 mod generate;
 
-use clap::{Arg, App};
+use clap::{App, Arg};
 
 fn main() {
-    let matches =
-        App::new("Octree Art")
-            .about("Generates printable octree art structure from 3D polygon models.")
-            .arg(Arg::with_name("INPUT")
+    let matches = App::new("Octree Art")
+        .about("Generates printable octree art structure from 3D polygon models.")
+        .arg(
+            Arg::with_name("INPUT")
                 .help("Sets the input file to use (.ply)")
                 .required(true)
-                .index(1))
-            .arg(Arg::with_name("OUTPUT")
+                .index(1),
+        )
+        .arg(
+            Arg::with_name("OUTPUT")
                 .help("Sets the output file to use (binary .stl)")
                 .required(true)
-                .index(2))
-            .get_matches();
+                .index(2),
+        )
+        .get_matches();
 
     match input::read_ply_as_mesh(matches.value_of("INPUT").unwrap()) {
         Err(e) => println!("Couldn't read PLY file:\n{}", e),

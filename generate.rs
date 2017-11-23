@@ -58,7 +58,7 @@ fn gen_printable(octree: &Octree<bool>) -> Vec<Tri> {
 
 fn gen_printable_aux(cube: Cube, octree: &Octree<bool>, level: u32, accum: &mut Vec<Tri>) {
     let Cube(org, sz) = cube.clone();
-    let mut column_r = 0.2;
+    let mut column_r = 0.1;
     match octree {
         &Octree::Br(ref children) => {
             let cc = divide_cube(cube);
@@ -76,9 +76,13 @@ fn gen_printable_aux(cube: Cube, octree: &Octree<bool>, level: u32, accum: &mut 
     // Gen frames
     let dr = Matrix3::from_axis_angle(V3::new(1.0, 1.0, 1.0).normalize(), Deg(120.0));
     for r in [SquareMatrix::identity(), dr, dr * dr].into_iter() {
-        let column_sz_1 = (sz * column_r).min(5e-3);
-        let column_sz = V3::new(column_sz_1, column_sz_1, sz);
-        emit_aabb(org, column_sz, accum);
+        let column_sz_1 = if level == 0 {
+            3e-3
+        } else {
+            ((sz * column_r).min(1e-3) + sz * column_r) / 2.0 // softmax
+        };
+        let column_sz = V3::new(column_sz_1, column_sz_1, sz + column_sz_1);
+        emit_aabb(org, r * column_sz, accum);
         emit_aabb(org + r * V3::new(sz, 0.0, 0.0), r * column_sz, accum);
         emit_aabb(org + r * V3::new(0.0, sz, 0.0), r * column_sz, accum);
         emit_aabb(org + r * V3::new(sz, sz, 0.0), r * column_sz, accum);

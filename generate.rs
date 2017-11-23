@@ -28,7 +28,10 @@ pub fn gen_octree_art(mesh: Vec<Tri>) -> Vec<Tri> {
 
     let (pmin, pmax) = aabb_for_mesh(mesh);
     let p_size = pmax - pmin;
-    let cube = Cube(pmin, max(p_size.x, p_size.y, p_size.z));
+    let c_size = max(p_size.x, p_size.y, p_size.z);
+    let sz3 = V3::new(c_size, c_size, c_size);
+    // Put the object in the center to make it look good.
+    let cube = Cube((pmin + pmax) / 2.0 - sz3 * 0.5, c_size);
     gen_printable(&divide(cube, &mesh_n, 5))
 }
 

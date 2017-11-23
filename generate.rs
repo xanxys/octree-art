@@ -26,7 +26,7 @@ pub fn gen_octree_art(mesh: Vec<Tri>) -> Vec<Tri> {
     let (pmin, pmax) = aabb_for_mesh(mesh);
     let p_size = pmax - pmin;
     let cube = Cube(pmin, max(p_size.x, p_size.y, p_size.z));
-    gen_printable(&divide(cube, &mesh_n, 2))
+    gen_printable(&divide(cube, &mesh_n, 5))
 }
 
 fn aabb_for_mesh(mesh: Vec<Tri>) -> (V3, V3) {
@@ -42,8 +42,30 @@ fn aabb_for_mesh(mesh: Vec<Tri>) -> (V3, V3) {
 }
 
 // Artistic / mechanical: generate mesh based on octree and arbitrary params.
+// Unit will be in meter.
 fn gen_printable(octree: &Octree<bool>) -> Vec<Tri> {
-    vec![]
+    let size = 0.05;
+    let mut tris = vec![];
+    gen_printable_aux(Cube(V3::new(0.0, 0.0, 0.0), size), octree, 0, &mut tris);
+    tris
+}
+
+fn gen_printable_aux(cube: Cube, octree: &Octree<bool>, level: u32, accum: &mut Vec<Tri>) {
+    let Cube(org, sz) = cube.clone();
+    accum.push([
+        org,
+        org + V3::new(sz, 0.0, 0.0),
+        org + V3::new(0.0, sz, 0.0),
+    ]);
+    match octree {
+        &Octree::Br(ref children) => {
+            let cc = divide_cube(cube);
+            for i in 0..8 {
+                gen_printable_aux(cc[i], &(*children)[i], level + 1, accum)
+            }
+        }
+        &Octree::Leaf(fill) => {}
+    }
 }
 
 

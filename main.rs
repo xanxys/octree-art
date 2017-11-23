@@ -1,6 +1,7 @@
 extern crate cgmath;
 extern crate clap;
 extern crate ply_rs;
+extern crate stl_io;
 
 mod input;
 mod output;
@@ -35,7 +36,10 @@ fn main() {
     let gen_mesh = generate::gen_octree_art(mesh);
     print_mesh_stat(&gen_mesh);
 
-    output::write_stl(matches.value_of("OUTPUT").unwrap(), &gen_mesh);
+    match output::write_stl(matches.value_of("OUTPUT").unwrap(), &gen_mesh) {
+        Err(e) => panic!("Couldn't write STL:\n{}", e),
+        _ => {}
+    }
 }
 
 fn print_mesh_stat(mesh: &Vec<[Vector3<f64>; 3]>) {

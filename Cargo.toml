@@ -4,10 +4,10 @@ version = "0.1.0"
 authors = ["xyx <xanxys@gmail.com>"]
 
 [dependencies]
-stl = "0.2.0"
 ply-rs = "0.1.1"
 clap = "2.27.1"
 cgmath = "0.15.0"
+stl_io = "0.3.4"
 
 [[bin]]
 name = "octree-art"

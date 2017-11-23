@@ -52,11 +52,7 @@ fn gen_printable(octree: &Octree<bool>) -> Vec<Tri> {
 
 fn gen_printable_aux(cube: Cube, octree: &Octree<bool>, level: u32, accum: &mut Vec<Tri>) {
     let Cube(org, sz) = cube.clone();
-    accum.push([
-        org,
-        org + V3::new(sz, 0.0, 0.0),
-        org + V3::new(0.0, sz, 0.0),
-    ]);
+    emit_aabb(org, V3::new(sz, sz, sz), accum);
     match octree {
         &Octree::Br(ref children) => {
             let cc = divide_cube(cube);
@@ -65,6 +61,50 @@ fn gen_printable_aux(cube: Cube, octree: &Octree<bool>, level: u32, accum: &mut 
             }
         }
         &Octree::Leaf(fill) => {}
+    }
+}
+
+fn emit_aabb(org: V3, sz: V3, accum: &mut Vec<Tri>) {
+    // XY
+    for z in [0.0, sz.z].into_iter() {
+        accum.push([
+            org + V3::new(0.0, 0.0, *z),
+            org + V3::new(sz.x, 0.0, *z),
+            org + V3::new(0.0, sz.y, *z),
+        ]);
+        accum.push([
+            org + V3::new(sz.x, sz.y, *z),
+            org + V3::new(0.0, sz.y, *z),
+            org + V3::new(sz.x, 0.0, *z),
+        ]);
+    }
+
+    // YZ
+    for x in [0.0, sz.x].into_iter() {
+        accum.push([
+            org + V3::new(*x, 0.0, 0.0),
+            org + V3::new(*x, sz.y, 0.0),
+            org + V3::new(*x, 0.0, sz.z),
+        ]);
+        accum.push([
+            org + V3::new(*x, sz.y, sz.z),
+            org + V3::new(*x, 0.0, sz.z),
+            org + V3::new(*x, sz.y, 0.0),
+        ]);
+    }
+
+    // ZX
+    for y in [0.0, sz.y].into_iter() {
+        accum.push([
+            org + V3::new(0.0, *y, 0.0),
+            org + V3::new(0.0, *y, sz.z),
+            org + V3::new(sz.x, *y, 0.0),
+        ]);
+        accum.push([
+            org + V3::new(sz.x, *y, sz.z),
+            org + V3::new(sz.x, *y, 0.0),
+            org + V3::new(0.0, *y, sz.z),
+        ]);
     }
 }
 

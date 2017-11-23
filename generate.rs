@@ -1,6 +1,9 @@
 use std::default::Default;
 use std::f64;
 use cgmath::Vector3;
+use cgmath::Deg;
+use cgmath::Matrix3;
+use cgmath::SquareMatrix;
 use cgmath::InnerSpace;
 
 type Tri = [Vector3<f64>; 3];
@@ -52,7 +55,7 @@ fn gen_printable(octree: &Octree<bool>) -> Vec<Tri> {
 
 fn gen_printable_aux(cube: Cube, octree: &Octree<bool>, level: u32, accum: &mut Vec<Tri>) {
     let Cube(org, sz) = cube.clone();
-    emit_aabb(org, V3::new(sz, sz, sz), accum);
+    let mut column_r = 0.2;
     match octree {
         &Octree::Br(ref children) => {
             let cc = divide_cube(cube);
@@ -60,7 +63,22 @@ fn gen_printable_aux(cube: Cube, octree: &Octree<bool>, level: u32, accum: &mut 
                 gen_printable_aux(cc[i], &(*children)[i], level + 1, accum)
             }
         }
-        &Octree::Leaf(fill) => {}
+        &Octree::Leaf(fill) => if fill {
+            if fill {
+                column_r *= 1.5;
+            }
+        },
+    }
+
+    // Gen frames
+    let dr = Matrix3::from_axis_angle(V3::new(1.0, 1.0, 1.0).normalize(), Deg(120.0));
+    for r in [SquareMatrix::identity(), dr, dr * dr].into_iter() {
+        let column_sz_1 = (sz * column_r).min(5e-3);
+        let column_sz = V3::new(column_sz_1, column_sz_1, sz);
+        emit_aabb(org, column_sz, accum);
+        emit_aabb(org + r * V3::new(sz, 0.0, 0.0), r * column_sz, accum);
+        emit_aabb(org + r * V3::new(0.0, sz, 0.0), r * column_sz, accum);
+        emit_aabb(org + r * V3::new(sz, sz, 0.0), r * column_sz, accum);
     }
 }
 
@@ -129,12 +147,6 @@ fn divide(cube: Cube, tris: &Vec<TriN>, remaining_level: u32) -> Octree<bool> {
         .filter(|tri| intersect_cube_tri(&cube, &tri))
         .map(|&tri| tri.clone())
         .collect();
-    println!(
-        "divide: {:?} tris={} lv={}",
-        cube.1,
-        relevant_tris.len(),
-        remaining_level
-    );
     if remaining_level == 0 {
         Octree::Leaf(relevant_tris.len() > 0)
     } else {

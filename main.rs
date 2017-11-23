@@ -32,7 +32,7 @@ fn main() {
     };
     print_mesh_stat(&mesh);
 
-    let gen_mesh = generate::subdiv(mesh);
+    let gen_mesh = generate::gen_octree_art(mesh);
     print_mesh_stat(&gen_mesh);
 
     output::write_stl(matches.value_of("OUTPUT").unwrap(), &gen_mesh);

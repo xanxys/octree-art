@@ -85,19 +85,19 @@ impl<A: Default> Default for Octree<A> {
 /// Divide space, so that false: definitely empty cell. true: contains surface.
 /// max_level = 0: Can only return Leaf. level=1 Br+Leaf....
 fn divide(cube: Cube, tris: &Vec<TriN>, remaining_level: u32) -> Octree<bool> {
+    let relevant_tris: Vec<TriN> = tris.iter()
+        .filter(|tri| intersect_cube_tri(&cube, &tri))
+        .map(|&tri| tri.clone())
+        .collect();
     println!(
         "divide: {:?} tris={} lv={}",
         cube.1,
-        tris.len(),
+        relevant_tris.len(),
         remaining_level
     );
     if remaining_level == 0 {
-        Octree::Leaf(tris.iter().any(|&tri| intersect_cube_tri(&cube, &tri)))
+        Octree::Leaf(relevant_tris.len() > 0)
     } else {
-        let relevant_tris: Vec<TriN> = tris.iter()
-            .filter(|tri| intersect_cube_tri(&cube, &tri))
-            .map(|&tri| tri.clone())
-            .collect();
         if relevant_tris.len() == 0 {
             Octree::Leaf(false)
         } else {
@@ -136,21 +136,21 @@ fn intersect_cube0_tri(cs: f64, &TriN(ref tri, ref n): &TriN) -> bool {
     // XYZ check.
     let tri_min = min_v3(tri[0], min_v3(tri[1], tri[2]));
     let tri_max = max_v3(tri[0], max_v3(tri[1], tri[2]));
-    if intersect_iv(Iv(0.0, cs), Iv(tri_min.x, tri_max.x))
-        || intersect_iv(Iv(0.0, cs), Iv(tri_min.y, tri_max.y))
-        || intersect_iv(Iv(0.0, cs), Iv(tri_min.z, tri_max.z))
+    if !intersect_iv(Iv(0.0, cs), Iv(tri_min.x, tri_max.x))
+        || !intersect_iv(Iv(0.0, cs), Iv(tri_min.y, tri_max.y))
+        || !intersect_iv(Iv(0.0, cs), Iv(tri_min.z, tri_max.z))
     {
-        return true;
+        return false;
     }
     // normal axis check.
-    let cube_dv = Vector3::new(cs * n.x, cs * n.y, cs * n.z);
-    let cube_min = -(cube_dv.x.min(0.0) + cube_dv.y.min(0.0) + cube_dv.z.min(0.0));
+    let cube_dv = cs * n;
+    let cube_min = cube_dv.x.min(0.0) + cube_dv.y.min(0.0) + cube_dv.z.min(0.0);
     let cube_max = cube_dv.x.max(0.0) + cube_dv.y.max(0.0) + cube_dv.z.max(0.0);
     let tri_v = tri[0].dot(*n);
-    if cube_min <= tri_v && tri_v <= cube_max {
-        return true;
+    if tri_v < cube_min || cube_max < tri_v {
+        return false;
     }
-    false
+    true
 }
 
 fn min_v3(a: V3, b: V3) -> V3 {
@@ -173,5 +173,5 @@ fn max(a: f64, b: f64, c: f64) -> f64 {
 struct Iv(f64, f64);
 
 fn intersect_iv(Iv(al, ah): Iv, Iv(bl, bh): Iv) -> bool {
-    al.max(bl) >= ah.min(bh)
+    al.max(bl) <= ah.min(bh)
 }
